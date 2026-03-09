@@ -10,6 +10,8 @@ from app.models.health_data import HealthData
 from app.schemas.health_data import HealthDataResponse
 from app.services.health_pipeline import clean_health_data
 from datetime import datetime, timezone
+from app.services.seq_monitor import check_seq
+
 
 router = APIRouter(prefix="/health-data", tags=["Health Data"])
 
@@ -31,13 +33,19 @@ def create_health_data(
     if not device:
         raise HTTPException(status_code=404, detail="Device not registered")
 
+
+    clean = clean_health_data(
+    device.id,
+    data.dict()
+    )
+    check_seq(device.id, data.seq)
     # 2️⃣ Lưu PostgreSQL
     health = models.HealthData(
     device_id=device.id,
     seq=data.seq,               
-    heart_rate=data.heart_rate,
-    spo2=data.spo2,
-    temperature=data.temperature,
+    heart_rate=clean["heart_rate"],
+    spo2=clean["spo2"],
+    temperature=clean["temperature"],
     gas_level=data.gas_level,
     humidity=data.humidity,
     blood_pressure=data.blood_pressure,
@@ -57,9 +65,9 @@ def create_health_data(
     analyze_and_create_alert(
     db=db,
     device_id=device.id,
-    heart_rate=data.heart_rate,
-    spo2=data.spo2,
-    temperature=data.temperature,
+    heart_rate=clean["heart_rate"],
+    spo2=clean["spo2"],
+    temperature=clean["temperature"],
     humidity=data.humidity,
     blood_pressure=data.blood_pressure
 )
@@ -67,16 +75,16 @@ def create_health_data(
 
     # 4️⃣ Push realtime Firebase
     push_latest_health(
-        device_uid=device.device_uid,
-        data={
-            "heartRate": data.heart_rate,
-            "spo2": data.spo2,
-            "temperature": data.temperature,
-            "gas": data.gas_level or 0,
-            "humidity": data.humidity or 0,              
-            "bloodPressure": data.blood_pressure or "0/0" 
-        }
-    )
+    device_uid=device.device_uid,
+    data={
+        "heartRate": clean["heart_rate"],
+        "spo2": clean["spo2"],
+        "temperature": clean["temperature"],
+        "gas": data.gas_level or 0,
+        "humidity": data.humidity or 0,
+        "bloodPressure": data.blood_pressure or "0/0"
+    }
+)
 
     return {"status": "ok"}
 

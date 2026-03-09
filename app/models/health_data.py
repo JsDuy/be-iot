@@ -23,6 +23,8 @@ class HealthData(Base):
     measured_at = Column(DateTime, nullable=True)
     is_offline = Column(Boolean, default=False)
 
+    sent_at = Column(DateTime, nullable=True)
+
     recorded_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

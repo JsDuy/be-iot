@@ -28,7 +28,11 @@ def clean_health_data(device_id: int, payload: dict):
     spo2 = fill_missing(payload.get("spo2"), state["last_spo2"])
 
     # 🌡️ TEMP: KHÔNG ĐƯỢC BỊA
-    raw_temp = payload.get("temperature")
+    raw_temp = (
+    payload.get("temperature")
+    or payload.get("temp")
+    or payload.get("Temp")
+    )
 
     if raw_temp is None or raw_temp <= 0:
         temp = None   # ✅ mất dữ liệu thật

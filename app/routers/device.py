@@ -15,6 +15,7 @@ from app.services.realtime_service import push_user_device
 from app.schemas.health_data import HealthDataResponse
 from app.models.device_member import DeviceMember
 from sqlalchemy import text
+from app.schemas.device_revoke import RevokeDeviceRequest
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
@@ -133,10 +134,9 @@ def share_device(
         "email": target_user.email
     }
 
-
 @router.post("/revoke")
 def revoke_device(
-    payload: ShareDeviceRequest,
+    payload: RevokeDeviceRequest,   # ✅ ĐÚNG
     db: Session = Depends(get_db),
     user = Depends(get_current_user)
 ):
@@ -152,7 +152,7 @@ def revoke_device(
         raise HTTPException(403, "Only owner can revoke")
 
     member = (
-        db.query(models.DeviceMember)
+        db.query(DeviceMember)
         .filter_by(
             device_id=device.id,
             user_uid=payload.target_user_uid
@@ -165,6 +165,7 @@ def revoke_device(
     db.delete(member)
     db.commit()
 
+    # 🔥 XÓA QUYỀN TRÊN FIREBASE
     push_user_device(
         user_uid=payload.target_user_uid,
         device_uid=device.device_uid,
