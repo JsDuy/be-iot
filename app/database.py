@@ -1,9 +1,17 @@
+# app/database.py
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
+import os
+from dotenv import load_dotenv
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-DATABASE_URL = "postgresql://postgres:464646@localhost:5432/health_monitor"
-
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,  # Đặt True nếu muốn xem log SQL khi debug
+    pool_size=5,  # Optional: điều chỉnh pool cho production sau
+    max_overflow=10
+)
 
 SessionLocal = sessionmaker(
     autocommit=False,

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.database import Base, engine
+from sqlalchemy.sql import text
+from app.database import Base, engine, get_db
 
 from app.routers.device import router as device_router
 from app.routers.health_data import router as health_data_router
@@ -33,6 +33,18 @@ app.include_router(alert_router)
 app.include_router(iot_router)
 app.include_router(stats_router)
 
+@app.on_event("startup")
+def startup_event():
+    try:
+        db = next(get_db())
+        db.execute(text("SELECT 1"))
+        print("✅ Supabase connected successfully!")
+        db.close()
+    except Exception as e:
+        print(f"❌ Supabase connection failed: {e}")
+        raise
+
 @app.get("/")
 def root():
     return {"status": "API Server is running"}
+
